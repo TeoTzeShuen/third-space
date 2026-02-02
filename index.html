@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Third Space - Prototype</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f2;
+            --text-color: #2c3e50;
+            --card-width: 300px;
+            --card-height: 420px;
+            
+            /* Card Colors */
+            --col-observation: #e6dac3; /* Beige */
+            --col-values: #aec6cf;      /* Soft Blue */
+            --col-silence: #b39eb5;     /* Muted Purple */
+            --col-reflection: #a6d8b6;  /* Soft Green */
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+        }
+
+        h1 {
+            font-weight: normal;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        /* Game Area */
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        /* The Card Styling */
+        .card-scene {
+            width: var(--card-width);
+            height: var(--card-height);
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            border: 8px solid white;
+        }
+
+        /* Back of card (The Pattern) */
+        .card-front {
+            background-color: #fff;
+            background-image: 
+                radial-gradient(circle at 100% 50%, transparent 20%, rgba(0,0,0,0.03) 21%, rgba(0,0,0,0.03) 34%, transparent 35%, transparent),
+                radial-gradient(circle at 0% 50%, transparent 20%, rgba(0,0,0,0.03) 21%, rgba(0,0,0,0.03) 34%, transparent 35%, transparent);
+            background-size: 40px 40px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .card-front h2 {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+            opacity: 0.6;
+        }
+
+        .tap-hint {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            margin-top: 2rem;
+        }
+
+        /* Face of card (The Content) */
+        .card-back {
+            transform: rotateY(180deg);
+            text-align: center;
+            background-color: #fff; /* Default, overridden by JS */
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            opacity: 0.7;
+        }
+
+        .card-type {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.75rem;
+            margin-bottom: 2rem;
+            opacity: 0.7;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
+            padding-bottom: 0.5rem;
+        }
+
+        .card-text {
+            font-size: 1.15rem;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+        }
+
+        button {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 50px;
+            background-color: #333;
+            color: white;
+            font-family: 'Georgia', serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button.secondary {
+            background-color: transparent;
+            border: 1px solid #999;
+            color: #555;
+            box-shadow: none;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        /* Footer */
+        .rules-modal {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 8px;
+            max-width: 600px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: none; /* Hidden by default */
+        }
+        
+        .rules-modal.visible {
+            display: block;
+        }
+
+        .rules-modal h3 {
+            margin-top: 0;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>THE THIRD SPACE</h1>
+        <div class="subtitle">A conversation game for families navigating silence, care, and safety.</div>
+    </header>
+
+    <div id="game-container">
+        <div class="card-scene" onclick="flipCard()">
+            <div class="card" id="active-card">
+                <div class="card-face card-front">
+                    <h2>The Third Space</h2>
+                    <div style="opacity: 0.3; font-size: 3rem;">✦</div>
+                    <div class="tap-hint">(Tap to reveal)</div>
+                </div>
+
+                <div class="card-face card-back" style="background-color: var(--col-observation);">
+                    <div class="card-icon">👁️</div>
+                    <div class="card-type">Observation Card</div>
+                    <div class="card-text">We have been talking about safe topics (work, food, school) for a long time today.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="drawNextCard()">Draw New Card</button>
+            <button class="secondary" onclick="toggleRules()">View Rules</button>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item"><span class="dot" style="background: var(--col-observation)"></span> Observation</div>
+            <div class="legend-item"><span class="dot" style="background: var(--col-values)"></span> Values</div>
+            <div class="legend-item"><span class="dot" style="background: var(--col-silence)"></span> Silence</div>
+            <div class="legend-item"><span class="dot" style="background: var(--col-reflection)"></span> Reflection</div>
+        </div>
+
+        <div id="rules-area" class="rules-modal">
+            <h3>How to Play</h3>
+            <p><strong>1. Setup:</strong> Sit around a table (3-6 players).<br>
+            <strong>2. Action:</strong> Draw 1 card per turn.<br>
+            <strong>3. Response:</strong> You may Answer, Pass, or Respond Abstractly.<br>
+            <strong>4. Goal:</strong> No winning, no scoring. The goal is simply to finish the deck or stop when it feels right.</p>
+            <p><em>Remember: Silence is always a valid answer.</em></p>
+        </div>
+    </div>
+
+    <script>
+        // Data from the Prototype Design
+        const deckData = [
+            // Observation Cards (Beige)
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "We have been talking about safe topics (work, food, school) for a long time today." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "There is a feeling of worry at the table that is not being spoken aloud." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "Someone here is carefully choosing their words to avoid an argument." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "We often show love through acts of service (money, food, driving) rather than conversation." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "A topic was just changed because it felt dangerous." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "There is a silence right now that feels heavy, but stable." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "We are maintaining peace, but we are not fully connecting." },
+            { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "Someone is protecting themselves by staying quiet." },
+
+            // Values Cards (Soft Blue)
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "When you are worried about a family member's future, what is your biggest fear?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "In our culture, does 'respecting your elders' mean agreeing with them, or caring for them?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "What is more important to this family: How we look to the neighbors, or how we feel at home?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "How do you define 'loyalty' to the family?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "Is it possible to disagree with someone's lifestyle but still protect them from harm?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "What is a tradition you hope never changes? What is a tradition you think should change?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "Does 'filial piety' mean sacrificing your own happiness, or sharing your success?" },
+            { type: "Values", color: "var(--col-values)", icon: "🧭", text: "Which is a greater act of love: Protecting someone from the truth, or telling them the truth?" },
+
+            // Silence Cards (Muted Purple)
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Safety Pause:</strong> Play this card to skip your turn. No explanation needed." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>The Breather:</strong> Everyone takes 30 seconds of silence. No talking allowed." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Deflect:</strong> Pass this question to the person on your left." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Boundary:</strong> I choose not to answer this right now. Please draw a new card." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Observation Only:</strong> I will listen to the next round, but I will not speak." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Rewind:</strong> Let's discard the last card and pick a new topic." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>Mutual Agreement:</strong> We agree to disagree on this. Let’s move on." },
+            { type: "Silence", color: "var(--col-silence)", icon: "⏸️", text: "<strong>The Exit:</strong> I need a break from this game. Let’s stop here for today." },
+
+            // Reflection Cards (Soft Green)
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "Is distance always a bad thing, or can it sometimes keep the peace?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "What is the difference between 'tolerating' someone and 'accepting' them?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "Can you love someone even if you don't understand their choices?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "What is one thing this family does really well to survive difficult times?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "Why is it harder to be vulnerable with family than with friends?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "What does 'safety' feel like to you physically?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "If we couldn't use words, how would we show we care?" },
+            { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "What is something we are all afraid of losing?" }
+        ];
+
+        let currentDeck = [...deckData];
+        const cardElement = document.getElementById('active-card');
+        const cardBackFace = document.querySelector('.card-back');
+
+        // Shuffle Function (Fisher-Yates)
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        // Initialize
+        currentDeck = shuffle(currentDeck);
+
+        function flipCard() {
+            cardElement.classList.toggle('is-flipped');
+        }
+
+        function drawNextCard() {
+            // 1. Flip card back to neutral state (face down)
+            if (cardElement.classList.contains('is-flipped')) {
+                cardElement.classList.remove('is-flipped');
+                
+                // Wait for flip to finish before changing content
+                setTimeout(() => {
+                    loadNewContent();
+                }, 300);
+            } else {
+                // If already face down, just load new content instantly (or after a tiny delay for feel)
+                loadNewContent();
+            }
+        }
+
+        function loadNewContent() {
+            // Check if deck is empty
+            if (currentDeck.length === 0) {
+                // Reset deck
+                currentDeck = shuffle([...deckData]);
+                alert("Deck shuffled and restarted.");
+            }
+
+            // Draw card
+            const card = currentDeck.pop();
+
+            // Apply content
+            const backFace = cardElement.querySelector('.card-back');
+            backFace.style.backgroundColor = card.color;
+            backFace.querySelector('.card-icon').innerText = card.icon;
+            backFace.querySelector('.card-type').innerText = card.type + " Card";
+            backFace.querySelector('.card-text').innerHTML = card.text;
+
+            // Optional: Auto flip after drawing? 
+            // Let's let the user flip it themselves to simulate drawing a card face down.
+        }
+
+        function toggleRules() {
+            const rules = document.getElementById('rules-area');
+            rules.classList.toggle('visible');
+        }
+
+        // Initial load (hidden content ready to be flipped)
+        loadNewContent();
+
+    </script>
+</body>
+</html>
+
+```
