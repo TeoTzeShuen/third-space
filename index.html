@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Third Space - Dual Deck Prototype</title>
+    <title>The Third Space - Fixed Transparency</title>
     <style>
         :root {
             --bg-color: #f4f4f2;
@@ -15,9 +15,9 @@
             --col-observation: #e6dac3; /* Beige */
             --col-values: #aec6cf;      /* Soft Blue */
             --col-reflection: #a6d8b6;  /* Soft Green */
-            --col-comfort: #ffd8b1;     /* Warm Orange (New Breather Cards) */
+            --col-comfort: #ffd8b1;     /* Warm Orange */
             
-            --col-silence: #b39eb5;     /* Muted Purple (Separate Deck) */
+            --col-silence: #b39eb5;     /* Muted Purple */
             --col-silence-dark: #8e7391;
         }
 
@@ -67,7 +67,7 @@
             align-items: center;
             flex-wrap: wrap;
             margin-bottom: 2rem;
-            perspective: 1000px;
+            perspective: 1000px; /* Essential for 3D flip */
         }
 
         /* --- THE ACTIVE CARD --- */
@@ -95,7 +95,14 @@
             position: absolute;
             width: 100%;
             height: 100%;
+            
+            /* KEY FIX: Solid background to prevent bleed-through */
+            background-color: #fff; 
+            
+            /* KEY FIX: Hides the back of this specific face */
             backface-visibility: hidden;
+            -webkit-backface-visibility: hidden; 
+
             border-radius: 16px;
             display: flex;
             flex-direction: column;
@@ -104,17 +111,21 @@
             padding: 2rem;
             box-sizing: border-box;
             border: 8px solid white;
+            
+            /* Hardware acceleration to fix rendering glitches */
+            transform: translateZ(0);
         }
 
-        /* Main Deck Styling (Back) */
+        /* Main Deck Styling (Back/Cover) */
         .card-front {
-            background-color: #fff;
+            /* KEY FIX: Ensure this sits on top visually when card is at 0deg */
+            z-index: 2; 
+            
             background-image: 
                 radial-gradient(circle at 100% 50%, transparent 20%, rgba(0,0,0,0.03) 21%, rgba(0,0,0,0.03) 34%, transparent 35%, transparent),
                 radial-gradient(circle at 0% 50%, transparent 20%, rgba(0,0,0,0.03) 21%, rgba(0,0,0,0.03) 34%, transparent 35%, transparent);
             background-size: 40px 40px;
             cursor: pointer;
-            z-index: 2;
         }
 
         .deck-label {
@@ -125,11 +136,12 @@
             font-size: 0.8rem;
         }
 
-        /* Active Card Content Styling */
+        /* Active Card Content Styling (The Reveal) */
         .card-back {
             transform: rotateY(180deg);
+            z-index: 1; /* Sits behind initially */
             text-align: center;
-            background-color: #fff; /* Dynamic */
+            background-color: #fff; /* Dynamic via JS, but solid default */
         }
 
         .card-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
@@ -324,9 +336,9 @@
     <script>
         // --- DATA SETS ---
 
-        // 1. Main Deck: Observation, Values, Reflection, and COMFORT (New)
+        // 1. Main Deck: Observation, Values, Reflection, and COMFORT
         const mainDeckData = [
-            // Comfort Cards (New Breather Questions) - Warm Orange
+            // Comfort Cards
             { type: "Comfort", color: "var(--col-comfort)", icon: "☕", text: "What is one meal that always makes you feel at home?" },
             { type: "Comfort", color: "var(--col-comfort)", icon: "☕", text: "What is a funny memory from a past family holiday that still makes you laugh?" },
             { type: "Comfort", color: "var(--col-comfort)", icon: "☕", text: "If you could instantly transport everyone at this table to a relaxing place, where would we go?" },
@@ -336,19 +348,19 @@
             { type: "Comfort", color: "var(--col-comfort)", icon: "☕", text: "What is the most relaxing sound to hear while you are falling asleep?" },
             { type: "Comfort", color: "var(--col-comfort)", icon: "☕", text: "What is a small, kind thing someone did for you this week?" },
 
-            // Observation Cards (Beige)
+            // Observation Cards
             { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "We have been talking about safe topics (work, food, school) for a long time today." },
             { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "There is a feeling of worry at the table that is not being spoken aloud." },
             { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "Someone here is carefully choosing their words to avoid an argument." },
             { type: "Observation", color: "var(--col-observation)", icon: "👁️", text: "We often show love through acts of service (money, food, driving) rather than conversation." },
 
-            // Values Cards (Blue)
+            // Values Cards
             { type: "Values", color: "var(--col-values)", icon: "🧭", text: "When you are worried about a family member's future, what is your biggest fear?" },
             { type: "Values", color: "var(--col-values)", icon: "🧭", text: "In our culture, does 'respecting your elders' mean agreeing with them, or caring for them?" },
             { type: "Values", color: "var(--col-values)", icon: "🧭", text: "What is more important to this family: How we look to the neighbors, or how we feel at home?" },
             { type: "Values", color: "var(--col-values)", icon: "🧭", text: "Is it possible to disagree with someone's lifestyle but still protect them from harm?" },
 
-            // Reflection Cards (Green)
+            // Reflection Cards (In-Game)
             { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "Is distance always a bad thing, or can it sometimes keep the peace?" },
             { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "What is the difference between 'tolerating' someone and 'accepting' them?" },
             { type: "Reflection", color: "var(--col-reflection)", icon: "💧", text: "Can you love someone even if you don't understand their choices?" }
@@ -433,8 +445,6 @@
             const card = silenceDeck.pop();
 
             // 3. Instant Overlay Effect
-            // We want this to feel like an interruption/override, so we update immediately without flipping back down
-            // But to show change, let's do a quick pulse opacity
             backFace.style.opacity = 0;
             
             setTimeout(() => {
